@@ -12,7 +12,20 @@
           "package_name": "com.alberto.edubus"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "585543947307-i2v4tjkdk1dd994svqelb24bbipc9m99.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.alberto.edubus",
+            "certificate_hash": "9f87f082eb73d57a66560a52cf3cbf04e6a2246d"
+          }
+        },
+        {
+          "client_id": "585543947307-hfrec4smpe4gnfs07skn229vqun9akm8.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAyazlDn4Nh8Zzgw73jR-Dz7Re38iAB9Oc"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "585543947307-hfrec4smpe4gnfs07skn229vqun9akm8.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

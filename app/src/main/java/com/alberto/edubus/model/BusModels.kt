@@ -5,6 +5,7 @@ import com.google.gson.annotations.SerializedName
 data class RutaBus(
     @SerializedName("linea_id") val lineaId: String,
     @SerializedName("nombre_comercial") val nombreComercial: String,
+    @SerializedName("id_surbus_filtro") val idSurbusFiltro: String,
     @SerializedName("paradas_ida") val paradasIda: List<Parada>,
     @SerializedName("paradas_vuelta") val paradasVuelta: List<Parada>
 )

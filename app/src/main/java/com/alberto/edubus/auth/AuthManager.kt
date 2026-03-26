@@ -1,6 +1,7 @@
 package com.alberto.edubus.auth
 
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 
@@ -26,5 +27,20 @@ class AuthManager {
                 if (task.isSuccessful) onSuccess()
                 else onError(task.exception?.message ?: "Error al iniciar sesión")
             }
+    }
+
+    // NUEVA FUNCIÓN PARA GOOGLE
+    fun loginConGoogle(idToken: String, onSuccess: () -> Unit, onError: (String) -> Unit) {
+        val credential = GoogleAuthProvider.getCredential(idToken, null)
+        auth.signInWithCredential(credential)
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) onSuccess()
+                else onError(task.exception?.message ?: "Error al autenticar con Google")
+            }
+    }
+
+    fun cerrarSesion(onSuccess: () -> Unit) {
+        auth.signOut()
+        onSuccess()
     }
 }

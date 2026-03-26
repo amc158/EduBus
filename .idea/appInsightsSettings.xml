@@ -8,10 +8,10 @@
             <InsightsFilterSettings>
               <option name="connection">
                 <ConnectionSetting>
-                  <option name="appId" value="PLACEHOLDER" />
-                  <option name="mobileSdkAppId" value="" />
-                  <option name="projectId" value="" />
-                  <option name="projectNumber" value="" />
+                  <option name="appId" value="com.alberto.edubus" />
+                  <option name="mobileSdkAppId" value="1:585543947307:android:900005ca3d47519980066e" />
+                  <option name="projectId" value="edubus-8364c" />
+                  <option name="projectNumber" value="585543947307" />
                 </ConnectionSetting>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />

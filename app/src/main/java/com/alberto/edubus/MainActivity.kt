@@ -8,16 +8,16 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.alberto.edubus.ui.PantallaLogin
+import com.alberto.edubus.ui.PantallaPerfil
 import com.alberto.edubus.ui.PantallaPortada
+import com.alberto.edubus.ui.PantallaPrincipal
 import com.alberto.edubus.ui.PantallaRegistro
-import com.alberto.edubus.ui.PantallaRuta
 import com.alberto.edubus.ui.theme.EduBusTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            // Aplicamos el tema
             EduBusTheme {
                 NavegacionEduBus()
             }
@@ -29,41 +29,49 @@ class MainActivity : ComponentActivity() {
 fun NavegacionEduBus() {
     val navController = rememberNavController()
 
-    // Definimos las rutas posibles de la app
     NavHost(navController = navController, startDestination = "portada") {
-
-        // 1. Pantalla de Portada
         composable("portada") {
             PantallaPortada(
                 onNavegarLogin = { navController.navigate("login") },
-                onNavegarRegistro = { navController.navigate("registro") }
+                onNavegarRegistro = { navController.navigate("registro") },
+                onLoginSuccess = {
+                    navController.navigate("rutas") { popUpTo("portada") { inclusive = true } }
+                }
             )
         }
 
-        // 2. Pantalla de Login
         composable("login") {
             PantallaLogin(
                 onLoginSuccess = {
-                    // Si el login es correcto, vamos a la app principal (Rutas)
-                    // y borramos el historial para que no pueda volver atrás al login
-                    navController.navigate("rutas") {
-                        popUpTo("portada") { inclusive = true }
-                    }
+                    navController.navigate("rutas") { popUpTo("portada") { inclusive = true } }
+                },
+                onNavegarRegistro = { navController.navigate("registro") },
+                onVolver = { navController.popBackStack() }
+            )
+        }
+
+        composable("registro") {
+            PantallaRegistro(
+                onRegistroSuccess = {
+                    navController.navigate("rutas") { popUpTo("portada") { inclusive = true } }
                 },
                 onVolver = { navController.popBackStack() }
             )
         }
 
-        // 3. Pantalla de Registro
-        composable("registro") {
-            PantallaRegistro(
-                onVolver = { navController.popBackStack() }
+        composable("rutas") {
+            PantallaPrincipal(
+                onCerrarSesion = {
+                    navController.navigate("portada") {
+                        popUpTo(0)
+                    }
+                },
+                onPerfil = { navController.navigate("perfil") }
             )
         }
 
-        // 4. Tu Pantalla Principal (La lista de buses que hicimos antes)
-        composable("rutas") {
-            PantallaRuta()
+        composable("perfil") {
+            PantallaPerfil(onVolver = { navController.popBackStack() })
         }
     }
-}
+    }

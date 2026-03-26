@@ -1,6 +1,7 @@
 {
   "linea_id": "L18",
   "nombre_comercial": "Línea 18: Torrecárdenas - Costacabana",
+  "id_surbus_filtro": "59c48efdfd3f44db9148b7d417edd75e",
   "paradas_ida": [
     { "orden": 1, "id_parada": "22", "nombre": "Hospital Universitario Torrecárdenas", "latitud": 36.86835, "longitud": -2.44358, "tiempo_desde_inicio_min": 0 },
     { "orden": 2, "id_parada": "426", "nombre": "Parking Hospital", "latitud": 0.0, "longitud": 0.0, "tiempo_desde_inicio_min": 0 },

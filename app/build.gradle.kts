@@ -42,6 +42,7 @@ android {
 }
 
 dependencies {
+    implementation("org.jsoup:jsoup:1.17.2")
     // COMPOSE
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -66,9 +67,12 @@ dependencies {
     implementation("com.google.firebase:firebase-analytics-ktx")
     implementation("com.google.firebase:firebase-auth-ktx")
     implementation("com.google.firebase:firebase-firestore-ktx")
+    implementation("com.google.android.gms:play-services-auth:21.0.0")
+    implementation("io.coil-kt:coil-compose:2.6.0")
 
     // NAVIGATION
     implementation("androidx.navigation:navigation-compose:2.7.7")
+    implementation(libs.androidx.compose.foundation)
 
     // TEST
     testImplementation(libs.junit)

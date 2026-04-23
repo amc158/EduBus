@@ -27,6 +27,9 @@ import com.alberto.edubus.data.BusRepository
 import com.alberto.edubus.model.Parada
 import com.alberto.edubus.model.RutaBus
 import kotlinx.coroutines.launch
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -133,14 +136,14 @@ fun ItemLineaBus(ruta: RutaBus, expandido: Boolean, onClick: () -> Unit) {
                 Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
                     Text("IDA", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                     ruta.paradasIda.forEach { parada ->
-                        ItemParada(parada, ruta.idSurbusFiltro, ruta.lineaId)
+                        ItemParada(parada, ruta.idSurbusFiltro, ruta.lineaId, ruta.horariosIda)
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
 
                     Text("VUELTA", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                     ruta.paradasVuelta.forEach { parada ->
-                        ItemParada(parada, ruta.idSurbusFiltro, ruta.lineaId)
+                        ItemParada(parada, ruta.idSurbusFiltro, ruta.lineaId, ruta.horariosVuelta)
                     }
                 }
             }
@@ -149,7 +152,7 @@ fun ItemLineaBus(ruta: RutaBus, expandido: Boolean, onClick: () -> Unit) {
 }
 
 @Composable
-fun ItemParada(parada: Parada, idSurbusFiltro: String, nombreCorto: String) {
+fun ItemParada(parada: Parada, idSurbusFiltro: String, nombreCorto: String, horariosSalida: List<String>?) {
     var mostrarDialogoTiempo by remember { mutableStateOf(false) }
 
     Row(
@@ -168,14 +171,25 @@ fun ItemParada(parada: Parada, idSurbusFiltro: String, nombreCorto: String) {
             parada = parada,
             idSurbusFiltro = idSurbusFiltro,
             nombreLinea = nombreCorto,
+            horariosSalida = horariosSalida,
             onDismiss = { mostrarDialogoTiempo = false }
         )
     }
 }
 
 @Composable
-fun DialogoTiempoReal(parada: Parada, idSurbusFiltro: String, nombreLinea: String, onDismiss: () -> Unit) {
-    var tiempoRestante by remember { mutableStateOf("Sincronizando...") }
+fun DialogoTiempoReal(
+    parada: Parada,
+    idSurbusFiltro: String,
+    nombreLinea: String,
+    horariosSalida: List<String>?,
+    onDismiss: () -> Unit
+) {
+    // Calculamos el tiempo offline al momento de abrir el diálogo
+    val tiempoOffline = remember { calcularTiempoEstimadoOffline(parada.tiempoAcumulado, horariosSalida) }
+
+    // Mostramos la predicción offline mientras se carga el dato real
+    var tiempoRestante by remember { mutableStateOf(tiempoOffline) }
     var cargando by remember { mutableStateOf(true) }
     var refrescarKey by remember { mutableIntStateOf(0) }
 
@@ -202,8 +216,15 @@ fun DialogoTiempoReal(parada: Parada, idSurbusFiltro: String, nombreLinea: Strin
                                     })();
                                     """.trimIndent()
                                 ) { valor ->
-                                    tiempoRestante = valor.replace("\"", "").let {
-                                        if (it != "null" && it.isNotBlank()) it else "Sin datos"
+                                    val limpio = valor.replace("\"", "")
+                                    // Si Surbus nos da datos válidos, sobrescribimos la estimación offline
+                                    if (limpio != "null" && limpio.isNotBlank() && limpio != "No disponible" && limpio != "Sin buses próximos") {
+                                        tiempoRestante = limpio
+                                    } else {
+                                        // Si falla, mantenemos la estimación offline o un mensaje de error si no la había
+                                        if (tiempoRestante == "Actualizando...") {
+                                            tiempoRestante = tiempoOffline
+                                        }
                                     }
                                     cargando = false
                                 }
@@ -243,18 +264,49 @@ fun DialogoTiempoReal(parada: Parada, idSurbusFiltro: String, nombreLinea: Strin
 
                 if (cargando) {
                     CircularProgressIndicator(strokeWidth = 3.dp)
-                } else {
-                    Text(
-                        text = tiempoRestante,
-                        fontSize = 36.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = if (tiempoRestante.contains("min")) Color(0xFF2E7D32) else MaterialTheme.colorScheme.primary
-                    )
+                    Spacer(modifier = Modifier.height(16.dp))
                 }
+
+                Text(
+                    text = tiempoRestante,
+                    fontSize = if (tiempoRestante.contains("Aprox.")) 22.sp else 36.sp, // Letra un poco más pequeña si es la predicción
+                    fontWeight = FontWeight.ExtraBold,
+                    color = when {
+                        tiempoRestante.contains("Aprox.") -> Color.Gray
+                        tiempoRestante.contains("min") -> Color(0xFF2E7D32)
+                        else -> MaterialTheme.colorScheme.primary
+                    }
+                )
             }
         },
         confirmButton = {
             TextButton(onClick = onDismiss) { Text("Cerrar") }
         }
     )
+}
+
+fun calcularTiempoEstimadoOffline(
+    tiempoAcumulado: Int,
+    horariosSalidaCabecera: List<String>?
+): String {
+    if (horariosSalidaCabecera.isNullOrEmpty()) return "Horarios no disponibles"
+
+    val ahora = LocalTime.now()
+    val formatter = DateTimeFormatter.ofPattern("H:mm")
+
+    for (horaString in horariosSalidaCabecera) {
+        try {
+            val horaSalida = LocalTime.parse(horaString, formatter)
+            val horaLlegadaEstimada = horaSalida.plusMinutes(tiempoAcumulado.toLong())
+
+            if (horaLlegadaEstimada.isAfter(ahora)) {
+                val minutosRestantes = ChronoUnit.MINUTES.between(ahora, horaLlegadaEstimada)
+                return "Aprox. $minutosRestantes min (Offline)"
+            }
+        } catch (e: Exception) {
+            continue
+        }
+    }
+
+    return "Fin del servicio por hoy"
 }

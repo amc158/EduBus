@@ -73,10 +73,20 @@ dependencies {
     // NAVIGATION
     implementation("androidx.navigation:navigation-compose:2.7.7")
     implementation(libs.androidx.compose.foundation)
+    implementation(libs.androidx.compose.ui.text)
 
     // TEST
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     debugImplementation(libs.androidx.compose.ui.tooling)
+
+    // Consumo de API REST
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+
+    // Google ML Kit para Traducción On-Device
+    implementation("com.google.mlkit:translate:17.0.2")
+    // Corrutinas para tareas de Google (nos permite usar .await())
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
 }

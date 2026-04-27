@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -26,16 +27,20 @@ import com.alberto.edubus.auth.AuthManager
 import com.alberto.edubus.data.BusRepository
 import com.alberto.edubus.model.Parada
 import com.alberto.edubus.model.RutaBus
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
+import com.alberto.edubus.BusViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PantallaPrincipal(
+    viewModel: BusViewModel,
     onCerrarSesion: () -> Unit,
-    onPerfil: () -> Unit
+    onPerfil: () -> Unit,
+    onJugarTrivia: (Int) -> Unit // <--- AÑADIDO EL PARÁMETRO AQUÍ
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -79,16 +84,34 @@ fun PantallaPrincipal(
                 )
             }
         ) { paddingValues ->
-            ContenidoRutas(Modifier.padding(paddingValues))
+            // Le pasamos la función al contenido
+            ContenidoRutas(
+                viewModel = viewModel,
+                modifier = Modifier.padding(paddingValues),
+                onJugarTrivia = onJugarTrivia // <--- PASAMOS EL PARÁMETRO HACIA ABAJO
+            )
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ContenidoRutas(modifier: Modifier = Modifier) {
+fun ContenidoRutas(
+    viewModel: BusViewModel,
+    modifier: Modifier = Modifier,
+    onJugarTrivia: (Int) -> Unit // <--- AÑADIDO EL PARÁMETRO AQUÍ TAMBIÉN
+) {
     val context = LocalContext.current
     var rutaDatos by remember { mutableStateOf<RutaBus?>(null) }
     var lineasExpandidas by remember { mutableStateOf(mapOf<String, Boolean>()) }
+
+    var sentidoIda by remember { mutableStateOf(true) }
+    var origenSeleccionado by remember { mutableStateOf<Parada?>(null) }
+    var destinoSeleccionado by remember { mutableStateOf<Parada?>(null) }
+    var expandidoOrigen by remember { mutableStateOf(false) }
+    var expandidoDestino by remember { mutableStateOf(false) }
+
+    val tiempoDisponible by viewModel.tiempoDisponible.collectAsState()
 
     LaunchedEffect(Unit) {
         val repo = BusRepository(context)
@@ -100,8 +123,143 @@ fun ContenidoRutas(modifier: Modifier = Modifier) {
             CircularProgressIndicator()
         }
     } else {
+        val paradasActuales = if (sentidoIda) rutaDatos!!.paradasIda else rutaDatos!!.paradasVuelta
+        val horariosActuales = rutaDatos!!.obtenerHorariosActuales(sentidoIda)
+
         LazyColumn(modifier = modifier.fillMaxSize().padding(16.dp)) {
+
+            // --- PLANIFICADOR DE VIAJE ---
             item {
+                Card(
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text("Planifica tu viaje (Línea ${rutaDatos!!.lineaId})", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        TabRow(selectedTabIndex = if (sentidoIda) 0 else 1) {
+                            Tab(
+                                selected = sentidoIda,
+                                onClick = {
+                                    sentidoIda = true
+                                    origenSeleccionado = null
+                                    destinoSeleccionado = null
+                                    viewModel.calcularTiempoTotalParaActividades(0, 0)
+                                },
+                                text = { Text("Hacia Costacabana", fontSize = 12.sp) }
+                            )
+                            Tab(
+                                selected = !sentidoIda,
+                                onClick = {
+                                    sentidoIda = false
+                                    origenSeleccionado = null
+                                    destinoSeleccionado = null
+                                    viewModel.calcularTiempoTotalParaActividades(0, 0)
+                                },
+                                text = { Text("Hacia Torrecárdenas", fontSize = 12.sp) }
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // Origen
+                        ExposedDropdownMenuBox(
+                            expanded = expandidoOrigen,
+                            onExpandedChange = { expandidoOrigen = it }
+                        ) {
+                            OutlinedTextField(
+                                value = origenSeleccionado?.nombre ?: "Selecciona origen",
+                                onValueChange = {},
+                                readOnly = true,
+                                label = { Text("Parada Actual") },
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandidoOrigen) },
+                                modifier = Modifier.menuAnchor().fillMaxWidth()
+                            )
+                            ExposedDropdownMenu(
+                                expanded = expandidoOrigen,
+                                onDismissRequest = { expandidoOrigen = false }
+                            ) {
+                                paradasActuales.forEach { parada ->
+                                    DropdownMenuItem(
+                                        text = { Text(parada.nombre) },
+                                        onClick = {
+                                            origenSeleccionado = parada
+                                            expandidoOrigen = false
+                                            actualizarTiempos(origenSeleccionado, destinoSeleccionado, horariosActuales, viewModel)
+                                        }
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // Destino
+                        ExposedDropdownMenuBox(
+                            expanded = expandidoDestino,
+                            onExpandedChange = { expandidoDestino = it }
+                        ) {
+                            OutlinedTextField(
+                                value = destinoSeleccionado?.nombre ?: "Selecciona destino",
+                                onValueChange = {},
+                                readOnly = true,
+                                label = { Text("Parada de Destino") },
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandidoDestino) },
+                                modifier = Modifier.menuAnchor().fillMaxWidth()
+                            )
+                            ExposedDropdownMenu(
+                                expanded = expandidoDestino,
+                                onDismissRequest = { expandidoDestino = false }
+                            ) {
+                                paradasActuales.forEach { parada ->
+                                    DropdownMenuItem(
+                                        text = { Text(parada.nombre) },
+                                        onClick = {
+                                            destinoSeleccionado = parada
+                                            expandidoDestino = false
+                                            actualizarTiempos(origenSeleccionado, destinoSeleccionado, horariosActuales, viewModel)
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // --- RESULTADO DEL ALGORITMO Y BOTÓN DE TRIVIA ---
+            if (tiempoDisponible > 0) {
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text("¡Tienes $tiempoDisponible minutos!", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                            Text("Actividades sugeridas para tu trayecto:")
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            // BOTÓN QUE LANZA LA TRIVIA
+                            Button(
+                                onClick = { onJugarTrivia(tiempoDisponible) }, // <--- AQUÍ SE USA LA FUNCIÓN
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32))
+                            ) {
+                                Text("Jugar Trivia Rápida ($tiempoDisponible min)")
+                            }
+                        }
+                    }
+                }
+            } else if (origenSeleccionado != null && destinoSeleccionado != null) {
+                item {
+                    Text("⚠️ El destino seleccionado es anterior al origen. Por favor, cambia las paradas.", color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(bottom = 24.dp))
+                }
+            }
+
+            // --- LÍNEAS ---
+            item {
+                Text("Detalle de la ruta:", fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
                 ItemLineaBus(
                     ruta = rutaDatos!!,
                     expandido = lineasExpandidas[rutaDatos!!.lineaId] == true,
@@ -135,15 +293,17 @@ fun ItemLineaBus(ruta: RutaBus, expandido: Boolean, onClick: () -> Unit) {
             AnimatedVisibility(visible = expandido) {
                 Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
                     Text("IDA", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                    val horariosIdaHoy = ruta.obtenerHorariosActuales(esIda = true)
                     ruta.paradasIda.forEach { parada ->
-                        ItemParada(parada, ruta.idSurbusFiltro, ruta.lineaId, ruta.horariosIda)
+                        ItemParada(parada, ruta.idSurbusFiltro, ruta.lineaId, horariosIdaHoy)
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
 
                     Text("VUELTA", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                    val horariosVueltaHoy = ruta.obtenerHorariosActuales(esIda = false)
                     ruta.paradasVuelta.forEach { parada ->
-                        ItemParada(parada, ruta.idSurbusFiltro, ruta.lineaId, ruta.horariosVuelta)
+                        ItemParada(parada, ruta.idSurbusFiltro, ruta.lineaId, horariosVueltaHoy)
                     }
                 }
             }
@@ -185,13 +345,22 @@ fun DialogoTiempoReal(
     horariosSalida: List<String>?,
     onDismiss: () -> Unit
 ) {
-    // Calculamos el tiempo offline al momento de abrir el diálogo
     val tiempoOffline = remember { calcularTiempoEstimadoOffline(parada.tiempoAcumulado, horariosSalida) }
 
-    // Mostramos la predicción offline mientras se carga el dato real
-    var tiempoRestante by remember { mutableStateOf(tiempoOffline) }
+    var tiempoRestante by remember { mutableStateOf("") }
+    var origenDato by remember { mutableStateOf("") }
     var cargando by remember { mutableStateOf(true) }
     var refrescarKey by remember { mutableIntStateOf(0) }
+
+    LaunchedEffect(refrescarKey) {
+        cargando = true
+        delay(5000)
+        if (cargando) {
+            tiempoRestante = tiempoOffline
+            origenDato = "Modo Offline (Predicción guardada)"
+            cargando = false
+        }
+    }
 
     key(refrescarKey) {
         Box(modifier = Modifier.size(0.dp)) {
@@ -216,19 +385,19 @@ fun DialogoTiempoReal(
                                     })();
                                     """.trimIndent()
                                 ) { valor ->
+                                    if (!cargando) return@evaluateJavascript
+
                                     val limpio = valor.replace("\"", "")
-                                    // Si Surbus nos da datos válidos, sobrescribimos la estimación offline
                                     if (limpio != "null" && limpio.isNotBlank() && limpio != "No disponible" && limpio != "Sin buses próximos") {
                                         tiempoRestante = limpio
+                                        origenDato = "Tiempo Real (Surbus GPS)"
                                     } else {
-                                        // Si falla, mantenemos la estimación offline o un mensaje de error si no la había
-                                        if (tiempoRestante == "Actualizando...") {
-                                            tiempoRestante = tiempoOffline
-                                        }
+                                        tiempoRestante = tiempoOffline
+                                        origenDato = "Modo Offline (Predicción guardada)"
                                     }
                                     cargando = false
                                 }
-                            }, 3500)
+                            }, 2500)
                         }
                     }
                     loadUrl("https://www.surbusalmeria.es/tiempos-de-espera/parada/${parada.idParada}")
@@ -249,7 +418,6 @@ fun DialogoTiempoReal(
                 if (!cargando) {
                     IconButton(onClick = {
                         cargando = true
-                        tiempoRestante = "Actualizando..."
                         refrescarKey++
                     }) {
                         Icon(Icons.Default.Autorenew, contentDescription = "Refrescar", tint = MaterialTheme.colorScheme.primary)
@@ -259,24 +427,28 @@ fun DialogoTiempoReal(
         },
         text = {
             Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(text = "Parada: ${parada.nombre}", fontSize = 14.sp, color = Color.Gray)
+                Text(text = "Parada: ${parada.nombre}", fontSize = 14.sp, color = Color.Gray, textAlign = TextAlign.Center)
                 Spacer(modifier = Modifier.height(24.dp))
 
                 if (cargando) {
-                    CircularProgressIndicator(strokeWidth = 3.dp)
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(48.dp),
+                        color = MaterialTheme.colorScheme.primary,
+                        strokeWidth = 4.dp
+                    )
                     Spacer(modifier = Modifier.height(16.dp))
+                    Text("Conectando con servidores...", fontSize = 16.sp, color = Color.Gray)
+                } else {
+                    Text(
+                        text = tiempoRestante,
+                        fontSize = if (tiempoRestante.contains("Aprox.")) 26.sp else 36.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = if (origenDato.contains("Offline")) Color.Gray else Color(0xFF2E7D32),
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(text = origenDato, fontSize = 12.sp, color = Color.Gray)
                 }
-
-                Text(
-                    text = tiempoRestante,
-                    fontSize = if (tiempoRestante.contains("Aprox.")) 22.sp else 36.sp, // Letra un poco más pequeña si es la predicción
-                    fontWeight = FontWeight.ExtraBold,
-                    color = when {
-                        tiempoRestante.contains("Aprox.") -> Color.Gray
-                        tiempoRestante.contains("min") -> Color(0xFF2E7D32)
-                        else -> MaterialTheme.colorScheme.primary
-                    }
-                )
             }
         },
         confirmButton = {
@@ -294,19 +466,57 @@ fun calcularTiempoEstimadoOffline(
     val ahora = LocalTime.now()
     val formatter = DateTimeFormatter.ofPattern("H:mm")
 
+    val ahoraMinutos = if (ahora.hour < 4) {
+        (ahora.hour * 60) + ahora.minute + 1440
+    } else {
+        (ahora.hour * 60) + ahora.minute
+    }
+
+    var menorTiempoEspera: Int = Int.MAX_VALUE
+
     for (horaString in horariosSalidaCabecera) {
         try {
-            val horaSalida = LocalTime.parse(horaString, formatter)
-            val horaLlegadaEstimada = horaSalida.plusMinutes(tiempoAcumulado.toLong())
+            val match = Regex("(\\d{1,2})[:.-](\\d{2})").find(horaString)
+            if (match != null) {
+                val (horaStr, minStr) = match.destructured
+                var salidaMinutos = (horaStr.toInt() * 60) + minStr.toInt()
 
-            if (horaLlegadaEstimada.isAfter(ahora)) {
-                val minutosRestantes = ChronoUnit.MINUTES.between(ahora, horaLlegadaEstimada)
-                return "Aprox. $minutosRestantes min (Offline)"
+                if (salidaMinutos < 4 * 60) {
+                    salidaMinutos += 1440
+                }
+
+                val llegadaMinutos = salidaMinutos + tiempoAcumulado
+                val minutosRestantes = llegadaMinutos - ahoraMinutos
+
+                if (minutosRestantes in 0..120) {
+                    if (minutosRestantes < menorTiempoEspera) {
+                        menorTiempoEspera = minutosRestantes
+                    }
+                }
             }
         } catch (e: Exception) {
             continue
         }
     }
 
-    return "Fin del servicio por hoy"
+    return if (menorTiempoEspera != Int.MAX_VALUE) {
+        "Aprox. $menorTiempoEspera min (Offline)"
+    } else {
+        "Fin del servicio por hoy"
+    }
+}
+
+fun actualizarTiempos(origen: Parada?, destino: Parada?, horariosSalida: List<String>?, viewModel: BusViewModel) {
+    if (origen != null && destino != null) {
+        val tiempoTrayecto = destino.tiempoAcumulado - origen.tiempoAcumulado
+
+        if (tiempoTrayecto > 0) {
+            val textoEspera = calcularTiempoEstimadoOffline(origen.tiempoAcumulado, horariosSalida)
+            val esperaMinutos = Regex("\\d+").find(textoEspera)?.value?.toInt() ?: 0
+
+            viewModel.calcularTiempoTotalParaActividades(esperaMinutos, tiempoTrayecto)
+        } else {
+            viewModel.calcularTiempoTotalParaActividades(0, 0)
+        }
+    }
 }

@@ -9,35 +9,53 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
 
-private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+// --- TEMA CLARO ---
+private val LightColorScheme = lightColorScheme(
+    primary = DeepSpaceBlue,
+    onPrimary = White,
+    primaryContainer = DeepSkyBlue,
+    onPrimaryContainer = DeepSpaceBlue,
+    secondary = LightSeaGreen,
+    onSecondary = White,
+    tertiary = Orange,
+    onTertiary = DeepSpaceBlue,
+    background = LightBackground,
+    surface = White,
+    onBackground = DeepSpaceBlue,
+    onSurface = DeepSpaceBlue,
+    error = Color(0xFFB3261E)
 )
 
-private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
-
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+// --- TEMA OSCURO ---
+private val DarkColorScheme = darkColorScheme(
+    primary = DeepSkyBlue,
+    onPrimary = DeepSpaceBlue,
+    primaryContainer = DeepSpaceBlue,
+    onPrimaryContainer = DeepSkyBlue,
+    secondary = LightSeaGreen,
+    onSecondary = DarkBackground,
+    tertiary = Orange,
+    onTertiary = DarkBackground,
+    background = DarkBackground,
+    surface = DeepSpaceBlue,
+    onBackground = White,
+    onSurface = White,
+    error = Color(0xFFF2B8B5)
 )
 
 @Composable
 fun EduBusTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    // IMPORTANTE: Ponemos dynamicColor a 'false' por defecto para que Android
+    // no sobrescriba tu paleta con los colores del fondo de pantalla del usuario (Material You).
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
@@ -45,14 +63,22 @@ fun EduBusTheme(
             val context = LocalContext.current
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
-
         darkTheme -> DarkColorScheme
         else -> LightColorScheme
     }
 
+    val view = LocalView.current
+    if (!view.isInEditMode) {
+        SideEffect {
+            val window = (view.context as Activity).window
+            window.statusBarColor = colorScheme.primary.toArgb()
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
+        }
+    }
+
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = Typography,
+        typography = Typography, // Asegúrate de tener tu archivo Type.kt
         content = content
     )
 }

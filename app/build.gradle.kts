@@ -53,6 +53,8 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
     implementation("androidx.compose.material:material-icons-extended")
+    implementation(libs.androidx.navigation.compose)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
 
     // XML COMPATIBILITY
     implementation("androidx.appcompat:appcompat:1.6.1")
@@ -62,18 +64,20 @@ dependencies {
     // DATA
     implementation("com.google.code.gson:gson:2.10.1")
 
-    // FIREBASE (Gestionado por BOM)
-    implementation(platform("com.google.firebase:firebase-bom:32.7.2"))
-    implementation("com.google.firebase:firebase-analytics-ktx")
-    implementation("com.google.firebase:firebase-auth-ktx")
-    implementation("com.google.firebase:firebase-firestore-ktx")
+    // FIREBASE (Todo centralizado vía TOML y BOM)
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.analytics.ktx)
+    implementation(libs.firebase.auth.ktx)
+    implementation(libs.firebase.firestore.ktx)
+    implementation(libs.firebase.functions.ktx)
+
     implementation("com.google.android.gms:play-services-auth:21.0.0")
     implementation("io.coil-kt:coil-compose:2.6.0")
 
     // NAVIGATION
-    implementation("androidx.navigation:navigation-compose:2.7.7")
     implementation(libs.androidx.compose.foundation)
     implementation(libs.androidx.compose.ui.text)
+    implementation(libs.firebase.functions.ktx)
 
     // TEST
     testImplementation(libs.junit)

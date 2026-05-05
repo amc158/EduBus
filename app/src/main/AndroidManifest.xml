@@ -16,9 +16,10 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.EduBus">
         <activity
-            android:name=".MainActivity"
+            android:name=".viewmodel.MainActivity"
             android:exported="true"
             android:label="@string/app_name"
+            android:windowSoftInputMode="adjustResize"
             android:theme="@style/Theme.EduBus">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

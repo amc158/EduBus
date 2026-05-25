@@ -1,34 +1,52 @@
-# 🚌 EduBus
+<p align="center">
+  <img src="app/src/main/res/drawable/edubus_logo.png" width="180" alt="EduBus Logo">
+</p>
 
-> **Transformando los trayectos en transporte público en una experiencia educativa, entretenida y personalizada.**
+<h1 align="center">🚌 EduBus: Gamificación y Aprendizaje en Movimiento</h1>
 
-![Android](https://img.shields.io/badge/Android-3DDC84?style=for-the-badge&logo=android&logoColor=white)
-![Kotlin](https://img.shields.io/badge/Kotlin-0095D5?style=for-the-badge&logo=kotlin&logoColor=white)
-![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-4285F4?style=for-the-badge&logo=android&logoColor=white)
-![Firebase](https://img.shields.io/badge/Firebase-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)
+<p align="center">
+  <b>EduBus</b> es una aplicación Android nativa diseñada para transformar los tiempos muertos en el transporte público en una experiencia educativa, entretenida y altamente personalizada.
+</p>
 
-## 📄 Descripción del Proyecto
-**EduBus** es una aplicación móvil nativa desarrollada como Proyecto Final de Ciclo (2º DAM). Su objetivo es aprovechar los tiempos muertos en el transporte público ofreciendo contenido de **m-learning** (micro-aprendizaje) y entretenimiento adaptado a la duración exacta del viaje.
+<p align="center">
+  <a href="https://github.com/amc158/EduBus/releases/download/v1.0.0/EduBus.apk">
+    <img src="https://img.shields.io/badge/Descargar_APK-EduBus_v1.0.0-3DDC84?style=for-the-badge&logo=android&logoColor=white" alt="Descargar APK">
+  </a>
+</p>
 
-A diferencia de otras apps, EduBus sigue una filosofía **"Offline First"**, permitiendo su uso en zonas sin cobertura gracias a una base de datos local sincronizada y la precarga de rutas mediante archivos JSON.
+---
 
-## 🚀 Funcionalidades Principales (MVP)
-* **📍 Cálculo de Rutas:** Algoritmo que calcula el tiempo disponible de juego basado en paradas reales (Implementado: Línea 18 de Almería).
-* **🎮 Gamificación:** Sistema de puntos y recompensas diseñado para motivar el aprendizaje continuo.
-* **📶 Modo Offline:** Persistencia de datos local para garantizar el funcionamiento en trayectos con baja cobertura.
-* **🧩 Arquitectura Híbrida:** Interfaz moderna construida con **Jetpack Compose** manteniendo compatibilidad con módulos de juegos en XML.
-* **🤖 Contenido Adaptativo:** Selección inteligente de actividades (Trivias, Lecturas, Juegos) en función del tiempo estimado de llegada.
+## 🛠 Stack Tecnológico
+EduBus emplea un ecosistema moderno y escalable, aplicando principios de arquitectura limpia y diseño de interfaces de vanguardia:
 
-## 🛠️ Stack Tecnológico
-El proyecto utiliza tecnologías modernas de desarrollo Android:
+<p align="center">
+  <img src="https://img.shields.io/badge/Kotlin-0095D5?style=flat-square&logo=kotlin&logoColor=white" />
+  <img src="https://img.shields.io/badge/Jetpack_Compose-4285F4?style=flat-square&logo=android&logoColor=white" />
+  <img src="https://img.shields.io/badge/Firebase-FFCA28?style=flat-square&logo=firebase&logoColor=black" />
+  <img src="https://img.shields.io/badge/MVVM-Arquitectura-red?style=flat-square" />
+</p>
 
-* **Lenguaje:** Kotlin.
-* **UI:** Jetpack Compose (Material Design 3).
-* **Arquitectura:** MVVM (Model-View-ViewModel).
-* **Datos Locales:** JSON Assets & Room/SQLite.
-* **Backend:** Firebase (Auth & Firestore).
+---
 
-## 🔧 Instalación y Pruebas
-1. Clonar el repositorio:
+## ✨ Características Principales
+* **📍 Cálculo de Rutas:** Algoritmos precisos para estimar tiempos de trayecto en transporte público.
+* **🎮 Gamificación Profunda:** Sistema de niveles, experiencia (XP) y tienda virtual para adquirir avatares personalizados.
+* **🧠 Aprendizaje Activo:** Minijuegos de Anagramas y Trivia con interfaz responsiva.
+* **🎙️ Inteligencia Artificial:** Generación de podcasts a medida adaptados a la duración del trayecto.
+* **☁️ Persistencia:** Sincronización total mediante Firebase Firestore y gestión offline de recursos.
+
+---
+
+## 🏗 Arquitectura del Sistema
+El proyecto se ha estructurado bajo un patrón **MVVM** para asegurar la separación de responsabilidades, garantizando una alta mantenibilidad y escalabilidad.
+
+
+
+---
+
+## 🚀 Instalación y Pruebas
+Si deseas explorar el código fuente o compilar el proyecto:
+
+1. **Clona el repositorio:**
    ```bash
-   git clone [https://github.com/ualamc158/edubus.git](https://github.com/ualamc158/edubus.git)
+   git clone [https://github.com/amc158/EduBus.git](https://github.com/amc158/EduBus.git)
